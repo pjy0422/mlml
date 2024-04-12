@@ -13,12 +13,17 @@ class CIFAR10(L.LightningDataModule):
         batch_size: int = 64,
         num_workers: int = 0,
         height_width: tuple = (32, 32),
+        train_transform=None,
+        test_transform=None,
     ):
         super().__init__()
         self.batch_size = batch_size
         self.data_path = data_path
         self.num_workers = num_workers
         self.height_width = height_width
+        self.num_classes = 10
+        self.train_transform = train_transform
+        self.test_transform = test_transform
 
     def prepare_data(self):
         datasets.CIFAR10(root=self.data_path, download=True)
