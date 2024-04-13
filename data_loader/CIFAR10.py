@@ -1,5 +1,4 @@
 import lightning as L
-import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
@@ -9,7 +8,7 @@ from torchvision import datasets, transforms
 class CIFAR10(L.LightningDataModule):
     def __init__(
         self,
-        data_path="./",
+        data_path="./data/cifar10/",
         batch_size: int = 64,
         num_workers: int = 0,
         height_width: tuple = (32, 32),
@@ -30,13 +29,23 @@ class CIFAR10(L.LightningDataModule):
         self.train_transform = transforms.Compose(
             [
                 transforms.Resize(self.height_width),
+                transforms.RandomCrop(self.height_width, padding=4),
+                transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=(0.4914, 0.4822, 0.4465),
+                    std=(0.2023, 0.1994, 0.2010),
+                ),
             ]
         )
         self.test_transform = transforms.Compose(
             [
                 transforms.Resize(self.height_width),
                 transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=(0.4914, 0.4822, 0.4465),
+                    std=(0.2023, 0.1994, 0.2010),
+                ),
             ]
         )
 

@@ -15,14 +15,24 @@ class LightningModel(L.LightningModule):
         weight_decay: float = 0.0,
         momentum: float = 0.9,
         optimizer: str = "sgd",
+        num_classes: int = 10,
+        batch_size: int = 64,
     ):
         super().__init__()
         self.model = model
         self.learning_rate = learning_rate
-        self.save_hyperparameters()
-        self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=10)
-        self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=10)
-        self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=10)
+        self.num_classes = num_classes
+        self.batch_size = batch_size
+        self.save_hyperparameters(ignore=["model"])
+        self.train_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
+        self.val_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
+        self.test_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
         self.weight_decay = weight_decay
         self.momentum = momentum
         self.optimizer = optimizer
@@ -60,15 +70,20 @@ class LightningModel(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        if self.optimizer == "sgd":
-            optimizer = torch.optim.SGD(
-                self.parameters(),
-                lr=self.learning_rate,
-                weight_decay=self.weight_decay,
-                momentum=self.momentum,
-            )
-        elif self.optimizer == "adam":
-            optimizer = torch.optim.Adam(
-                self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
-            )
-        return optimizer
+        optimizer = torch.optim.SGD(
+            self.parameters(),
+            lr=self.learning_rate,
+            momentum=0.9,
+            weight_decay=5e-4,
+        )
+        steps_per_epoch = 45000 // self.batch_size
+        scheduler_dict = {
+            "scheduler": OneCycleLR(
+                optimizer,
+                0.1,
+                epochs=self.trainer.max_epochs,
+                steps_per_epoch=steps_per_epoch,
+            ),
+            "interval": "step",
+        }
+        return {"optimizer": optimizer, "lr_scheduler": scheduler_dict}
