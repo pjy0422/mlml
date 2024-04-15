@@ -3,3 +3,4 @@
 *.pyc
 /wandb/*
 /test_*/*
+/outputs/*

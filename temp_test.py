@@ -26,15 +26,13 @@ def main(cfg: DictConfig):
     torch.set_float32_matmul_precision("medium")
     L.seed_everything(cfg.params.seed)
     wandb.login()
-    wandb_logger = WandbLogger(project="test_0314", name="0217")
-    wandb.config = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
+    wandb_logger = WandbLogger(project=cfg.params.wandb_name, name=cfg.params.wandb_name)
     cifar10_dm = CIFAR10(num_workers=cfg.params.num_workers, batch_size=cfg.params.batch_size)
     cifar10_dm.prepare_data()
     cifar10_dm.setup()
     model = resnet32()
     lightning_model = LightningModel(model=model, cfg=cfg)
     trainer = L.Trainer(
-        fast_dev_run=3,
         max_epochs=cfg.params.max_epochs,
         accelerator=cfg.params.accelerator,
         num_nodes=cfg.params.num_nodes,
