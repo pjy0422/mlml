@@ -1,0 +1,28 @@
+defaults:  
+  - _self_  
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
+
+params:
+  max_epochs: 20
+  batch_size: 128
+  learning_rate: 0.005
+  num_workers: 8
+  seed: 7
+  optimizer: sgd
+  momentum: 0.9
+  weight_decay: 5e-4
+  model: resnet32
+  accelerator: auto
+  num_nodes: 1
+  logger: wandb_logger
+  dm: CIFAR10
+  wandb_project: mlml
+  wandb_name: resnet32,epochs=20,lr=0.005,bs=128
+  data_dir : ./data/cifar10
+  num_classes: 10

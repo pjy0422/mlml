@@ -8,34 +8,20 @@ from torch.optim.lr_scheduler import OneCycleLR
 
 
 class LightningModel(L.LightningModule):
-    def __init__(
-        self,
-        model,
-        learning_rate: float = 0.1,
-        weight_decay: float = 0.0,
-        momentum: float = 0.9,
-        optimizer: str = "sgd",
-        num_classes: int = 10,
-        batch_size: int = 64,
-    ):
+    def __init__(self, model, cfg):
         super().__init__()
+        self.cfg = cfg
         self.model = model
-        self.learning_rate = learning_rate
-        self.num_classes = num_classes
-        self.batch_size = batch_size
+        self.learning_rate = cfg.params.learning_rate
+        self.num_classes = cfg.params.num_classes
+        self.batch_size = cfg.params.batch_size
         self.save_hyperparameters(ignore=["model"])
-        self.train_acc = torchmetrics.Accuracy(
-            task="multiclass", num_classes=self.num_classes
-        )
-        self.val_acc = torchmetrics.Accuracy(
-            task="multiclass", num_classes=self.num_classes
-        )
-        self.test_acc = torchmetrics.Accuracy(
-            task="multiclass", num_classes=self.num_classes
-        )
-        self.weight_decay = weight_decay
-        self.momentum = momentum
-        self.optimizer = optimizer
+        self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
+        self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
+        self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
+        self.weight_decay = cfg.params.weight_decay
+        self.momentum = cfg.params.momentum
+        self.optimizer = cfg.params.optimizer
 
     def forward(self, x):
         return self.model(x)
@@ -51,9 +37,7 @@ class LightningModel(L.LightningModule):
         loss, true_labels, predicted_labels = self._shared_step(batch)
         self.log("train_loss", loss)
         self.train_acc(predicted_labels, true_labels)
-        self.log(
-            "train_acc", self.train_acc, prog_bar=True, on_epoch=True, on_step=False
-        )
+        self.log("train_acc", self.train_acc, prog_bar=True, on_epoch=True, on_step=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -73,8 +57,8 @@ class LightningModel(L.LightningModule):
         optimizer = torch.optim.SGD(
             self.parameters(),
             lr=self.learning_rate,
-            momentum=0.9,
-            weight_decay=5e-4,
+            momentum=self.momentum,
+            weight_decay=self.weight_decay,
         )
         steps_per_epoch = 45000 // self.batch_size
         scheduler_dict = {
