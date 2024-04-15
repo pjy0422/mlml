@@ -15,7 +15,9 @@ from omegaconf import DictConfig, OmegaConf
 
 def create_model():
     model = torchvision.models.resnet18(weights=False, num_classes=10)
-    model.conv1 = torch.nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+    model.conv1 = torch.nn.Conv2d(
+        3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False
+    )
     model.maxpool = torch.nn.Identity()
     return model
 
@@ -26,12 +28,16 @@ def main(cfg: DictConfig):
     torch.set_float32_matmul_precision("medium")
     L.seed_everything(cfg.params.seed)
     wandb.login()
-    wandb_logger = WandbLogger(project=cfg.params.wandb_name, name=cfg.params.wandb_name)
-    cifar10_dm = CIFAR10(num_workers=cfg.params.num_workers, batch_size=cfg.params.batch_size)
+    wandb_logger = WandbLogger(
+        project=cfg.params.wandb_name, name=cfg.params.wandb_name
+    )
+    cifar10_dm = CIFAR10(
+        num_workers=cfg.params.num_workers, batch_size=cfg.params.batch_size
+    )
     cifar10_dm.prepare_data()
     cifar10_dm.setup()
-    model = resnet32()
-    lightning_model = LightningModel(model=model, cfg=cfg)
+
+    lightning_model = LightningModel(cfg=cfg)
     trainer = L.Trainer(
         max_epochs=cfg.params.max_epochs,
         accelerator=cfg.params.accelerator,

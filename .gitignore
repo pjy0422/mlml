@@ -4,3 +4,4 @@
 /wandb/*
 /test_*/*
 /outputs/*
+/lightning_logs/*

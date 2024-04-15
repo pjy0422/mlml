@@ -4,24 +4,35 @@ import lightning as L
 import torch
 import torch.nn.functional as F
 import torchmetrics
+from model.resnet import resnet32
 from torch.optim.lr_scheduler import OneCycleLR
 
 
 class LightningModel(L.LightningModule):
-    def __init__(self, model, cfg):
+    def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
-        self.model = model
+        self.load_model()
         self.learning_rate = cfg.params.learning_rate
         self.num_classes = cfg.params.num_classes
         self.batch_size = cfg.params.batch_size
         self.save_hyperparameters(ignore=["model"])
-        self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
-        self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
-        self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=self.num_classes)
+        self.train_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
+        self.val_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
+        self.test_acc = torchmetrics.Accuracy(
+            task="multiclass", num_classes=self.num_classes
+        )
         self.weight_decay = cfg.params.weight_decay
         self.momentum = cfg.params.momentum
         self.optimizer = cfg.params.optimizer
+
+    def load_model(self):
+        Model = resnet32()
+        self.model = Model
 
     def forward(self, x):
         return self.model(x)
@@ -37,7 +48,9 @@ class LightningModel(L.LightningModule):
         loss, true_labels, predicted_labels = self._shared_step(batch)
         self.log("train_loss", loss)
         self.train_acc(predicted_labels, true_labels)
-        self.log("train_acc", self.train_acc, prog_bar=True, on_epoch=True, on_step=False)
+        self.log(
+            "train_acc", self.train_acc, prog_bar=True, on_epoch=True, on_step=False
+        )
         return loss
 
     def validation_step(self, batch, batch_idx):
