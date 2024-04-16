@@ -38,6 +38,7 @@ def main(cfg: DictConfig):
     cifar10_dm.setup()
 
     lightning_model = LightningModel(cfg=cfg)
+    lightning_model.load_pretrained_model()
     trainer = L.Trainer(
         max_epochs=cfg.params.max_epochs,
         accelerator=cfg.params.accelerator,

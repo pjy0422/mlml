@@ -3,10 +3,11 @@ import os
 import lightning as L
 import torch
 import torch.nn.functional as F
+from torch.utils.data.dataset import random_split
 import torchmetrics
 from model.resnet import resnet32
 from torch.optim.lr_scheduler import OneCycleLR
-from torchattacks import PGD
+from torchattacks import PGDL2
 
 
 model_path = "./epoch=199-step=70200.ckpt"
@@ -18,7 +19,7 @@ class LightningModel(L.LightningModule):
         self.learning_rate = cfg.params.learning_rate
         self.num_classes = cfg.params.num_classes
         self.batch_size = cfg.params.batch_size
-        self.save_hyperparameters(ignore=["model"])
+        self.save_hyperparameters()
         self.train_acc = torchmetrics.Accuracy(
             task="multiclass", num_classes=self.num_classes
         )
@@ -36,7 +37,7 @@ class LightningModel(L.LightningModule):
         Model = resnet32()
         self.model = Model
     def load_pretrained_model(self):
-        self.pretrained_model = LightningModel.load_from_checkpoint(self.pretrained_model_path,map_location='cpu')
+        self.pretrained_model = LightningModel.load_from_checkpoint("./epoch=199-step=70200.ckpt",map_location='cpu')
         # eval mode
         self.pretrained_model.eval()
     def forward(self, x):
@@ -50,9 +51,15 @@ class LightningModel(L.LightningModule):
         return loss, true_labels, predicted_labels
 
     def training_step(self, batch, batch_idx):
+        ##### training with adversarial examples #####
         features, true_labels = batch
-        logits = self(features)
-        attack = PGD(self.model, eps=8 / 255, alpha=2 / 255, steps=10)
+        attack = PGDL2(model = self.pretrained_model, eps = 1.0, alpha = 0.2, steps = 10, random_start = True)
+        adv_features = attack(features, true_labels)        
+        logits = self(adv_features)
+        loss = F.cross_entropy(logits, true_labels) + F.cross_entropy(self(features), true_labels)
+        predicted_labels = torch.argmax(logits, dim=1)
+        ##### original code #####
+        #loss, true_labels, predicted_labels = self._shared_step((features, true_labels))
         self.log("train_loss", loss)
         self.train_acc(predicted_labels, true_labels)
         self.log(
