@@ -6,8 +6,10 @@ import torch.nn.functional as F
 import torchmetrics
 from model.resnet import resnet32
 from torch.optim.lr_scheduler import OneCycleLR
+from torchattacks import PGD
 
 
+model_path = "./epoch=66-step=23517.ckpt"
 class LightningModel(L.LightningModule):
     def __init__(self, cfg):
         super().__init__()
@@ -29,11 +31,14 @@ class LightningModel(L.LightningModule):
         self.weight_decay = cfg.params.weight_decay
         self.momentum = cfg.params.momentum
         self.optimizer = cfg.params.optimizer
-
+        self.pretrained_model_path = model_path
     def load_model(self):
         Model = resnet32()
         self.model = Model
-
+    def load_pretrained_model(self):
+        self.pretrained_model = LightningModel.load_from_checkpoint(self.pretrained_model_path,map_location='cpu')
+        # eval mode
+        self.pretrained_model.eval()
     def forward(self, x):
         return self.model(x)
 
@@ -45,7 +50,9 @@ class LightningModel(L.LightningModule):
         return loss, true_labels, predicted_labels
 
     def training_step(self, batch, batch_idx):
-        loss, true_labels, predicted_labels = self._shared_step(batch)
+        features, true_labels = batch
+        logits = self(features)
+        attack = PGD(self.model, eps=8 / 255, alpha=2 / 255, steps=10)
         self.log("train_loss", loss)
         self.train_acc(predicted_labels, true_labels)
         self.log(
