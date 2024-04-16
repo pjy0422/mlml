@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import OneCycleLR
 from torchattacks import PGD
 
 
-model_path = "./epoch=66-step=23517.ckpt"
+model_path = "./epoch=199-step=70200.ckpt"
 class LightningModel(L.LightningModule):
     def __init__(self, cfg):
         super().__init__()

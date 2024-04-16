@@ -39,7 +39,7 @@ def main(cfg: DictConfig):
 
     lightning_model = LightningModel(cfg=cfg)
     trainer = L.Trainer(
-        max_epochs=3,
+        max_epochs=cfg.params.max_epochs,
         accelerator=cfg.params.accelerator,
         num_nodes=cfg.params.num_nodes,
         logger=wandb_logger,
